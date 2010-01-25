@@ -70,11 +70,7 @@ namespace MediaBrowser.Library.ImageManagement {
                 if (!isValid) {
                     ClearLocalImages();
                     if (imageIsCached) {
-                        byte[] data = File.ReadAllBytes(Path);
-                        using (var stream = ProtectedFileStream.OpenExclusiveWriter(LocalFilename)) {
-                            BinaryWriter bw = new BinaryWriter(stream);
-                            bw.Write(data);
-                        }
+                        this.CacheImage();
                     }
                     isValid = true;
                 }
@@ -82,6 +78,18 @@ namespace MediaBrowser.Library.ImageManagement {
                 return LocalFilename;
             }
         }
+
+        protected virtual void CacheImage()
+        {
+            byte[] data = File.ReadAllBytes(Path);
+            using (var stream = ProtectedFileStream.OpenExclusiveWriter(LocalFilename))
+            {
+                BinaryWriter bw = new BinaryWriter(stream);
+                bw.Write(data);
+                stream.Close();
+            }
+        }
+
     
     }
 }
