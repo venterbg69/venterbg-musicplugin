@@ -62,10 +62,9 @@ namespace Configurator
             InitializeComponent();
             config = Kernel.Instance.ConfigData;
             LoadComboBoxes();
-            lblVersion.Content = "Version " + Kernel.Instance.Version;
-
-            infoPanel.Visibility = Visibility.Hidden;
-            infoPlayerPanel.Visibility = Visibility.Hidden;
+            lblVersion.Content = lblVersion2.Content = "Version " + Kernel.Instance.Version;
+//infoPanel
+            infoPanel.Visibility = infoPlayerPanel.Visibility = pluginPanel.Visibility = Visibility.Hidden;
 
             // first time the wizard has run 
             if (config.InitialFolder != ApplicationPaths.AppInitialDirPath) {
@@ -94,7 +93,8 @@ namespace Configurator
                 // someone bodged up the config
             }
 
-            daemonToolsLocation.Content = config.DaemonToolsLocation;
+            //daemonToolsLocation.Content = config.DaemonToolsLocation; /// old
+            daemonToolsLocation.Text = config.DaemonToolsLocation;
 
 
             RefreshExtenderFormats();
@@ -391,7 +391,7 @@ namespace Configurator
             cbxOptionBlockUnrated.IsChecked = config.ParentalBlockUnrated;
             cbxOptionHideProtected.IsChecked = config.HideParentalDisAllowed;
             cbxOptionAutoUnlock.IsChecked = config.UnlockOnPinEntry;
-            gbPCGeneral.IsEnabled = gbPCPIN.IsEnabled = config.ParentalControlEnabled;
+            gbPCGeneral.IsEnabled = gbPCPIN.IsEnabled = gbPCFolderSecurity.IsEnabled = config.ParentalControlEnabled;
             ddlOptionMaxAllowedRating.SelectedItem = ratings.ToString(config.MaxParentalLevel);
             slUnlockPeriod.Value = config.ParentalUnlockPeriod;
             txtPCPIN.Password = config.ParentalPIN;
@@ -782,7 +782,7 @@ sortorder: {2}
 
             var dialog = new OpenFileDialog();
             dialog.Title = "Select your image";
-            dialog.Filter = "Image files (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg";
+            dialog.Filter = "Image files (*.png;*.jpg;)|*.png;*.jpg;";
             dialog.FilterIndex = 1;
             dialog.RestoreDirectory = true;
             var result = dialog.ShowDialog(this);
@@ -847,7 +847,10 @@ sortorder: {2}
                 {
                     folderImage.Source = null;
                 }
+                //enable the rename, delete, up and down buttons if a media collection is selected.
+                btnRename.IsEnabled = btnRemoveFolder.IsEnabled = btnUp.IsEnabled = btnDn.IsEnabled = true;
 
+                //show the infoPanel
                 infoPanel.Visibility = Visibility.Visible;
             }
         }
@@ -859,6 +862,11 @@ sortorder: {2}
                 IPlugin plugin = pluginList.SelectedItem as IPlugin;
                 System.Version v = PluginManager.Instance.GetLatestVersion(plugin);
                 System.Version rv = PluginManager.Instance.GetRequiredVersion(plugin) ?? new System.Version(0,0,0,0);
+                //enable the remove button if a plugin is selected.
+                removePlugin.IsEnabled = true;
+
+                //show the pluginPanel
+                pluginPanel.Visibility = Visibility.Visible;
                 if (v != null)
                 {
                     if (v > plugin.Version && rv <= Kernel.Instance.Version)
@@ -985,7 +993,8 @@ sortorder: {2}
             if (result == true)
             {
                 config.DaemonToolsLocation = dialog.FileName;
-                daemonToolsLocation.Content = config.DaemonToolsLocation;
+                //daemonToolsLocation.Content = config.DaemonToolsLocation;
+                daemonToolsLocation.Text = config.DaemonToolsLocation;
                 SaveConfig();
             }
         }
@@ -1098,12 +1107,14 @@ sortorder: {2}
                     txtPlayerCommand.Text = mediaPlayer.Command;
                     lblPlayerArgs.Text = mediaPlayer.Args;
                     infoPlayerPanel.Visibility = Visibility.Visible;
+                    btnRemovePlayer.IsEnabled = true;
                 }
                 else
                 {
                     txtPlayerCommand.Text = string.Empty;
                     lblPlayerArgs.Text = string.Empty;
                     infoPlayerPanel.Visibility = Visibility.Hidden;
+                    btnRemovePlayer.IsEnabled = false;
                 }
             }
         }
@@ -1208,7 +1219,7 @@ sortorder: {2}
         private void cbxEnableParentalControl_Click(object sender, RoutedEventArgs e)
         {
             //enable/disable other controls on screen
-            gbPCGeneral.IsEnabled = gbPCPIN.IsEnabled = (bool)cbxEnableParentalControl.IsChecked;
+            gbPCGeneral.IsEnabled = gbPCPIN.IsEnabled = gbPCFolderSecurity.IsEnabled = (bool)cbxEnableParentalControl.IsChecked;
 
             config.ParentalControlEnabled = (bool)cbxEnableParentalControl.IsChecked;
             SaveConfig();
@@ -1309,19 +1320,31 @@ sortorder: {2}
         private void hdrBasic_MouseDown(object sender, MouseButtonEventArgs e)
         {
             SetHeader(hdrBasic);
-            cacheTab.Visibility = externalPlayersTab.Visibility = displayTab.Visibility = extendersTab.Visibility = folderSecurityTab.Visibility = parentalControlTab.Visibility = Visibility.Collapsed;
+            cacheTab.Visibility = externalPlayersTab.Visibility = displayTab.Visibility = extendersTab.Visibility = parentalControlTab.Visibility = helpTab.Visibility = Visibility.Collapsed;
+            mediacollectionTab.Visibility = podcastsTab.Visibility = plugins.Visibility = Visibility.Visible;
         }
 
         private void hdrAdvanced_MouseDown(object sender, MouseButtonEventArgs e)
         {
             SetHeader(hdrAdvanced);
-            cacheTab.Visibility = externalPlayersTab.Visibility = displayTab.Visibility = extendersTab.Visibility = folderSecurityTab.Visibility = parentalControlTab.Visibility = Visibility.Visible;
+            cacheTab.Visibility = externalPlayersTab.Visibility = displayTab.Visibility = extendersTab.Visibility = parentalControlTab.Visibility = Visibility.Visible;
+            mediacollectionTab.Visibility = podcastsTab.Visibility = plugins.Visibility = Visibility.Visible;
+            helpTab.Visibility = Visibility.Collapsed;
+        }
+
+        private void hdrHelpAbout_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            SetHeader(hdrHelpAbout);
+            cacheTab.Visibility = externalPlayersTab.Visibility = displayTab.Visibility = extendersTab.Visibility = parentalControlTab.Visibility = Visibility.Collapsed;
+            mediacollectionTab.Visibility = podcastsTab.Visibility = plugins.Visibility = Visibility.Collapsed;
+            helpTab.Visibility = Visibility.Visible;
+            helpTab.IsSelected = true;
         }
 
         private void ClearHeaders()
         {
-            hdrAdvanced.Foreground = hdrBasic.Foreground = new SolidColorBrush(System.Windows.Media.Colors.Gray);
-            hdrAdvanced.FontWeight = hdrBasic.FontWeight = FontWeights.Normal;
+            hdrAdvanced.Foreground = hdrBasic.Foreground = hdrHelpAbout.Foreground = new SolidColorBrush(System.Windows.Media.Colors.Gray);
+            hdrAdvanced.FontWeight = hdrBasic.FontWeight = hdrHelpAbout.FontWeight = FontWeights.Normal;
             tabControl1.SelectedIndex = 0;
         }
         private void SetHeader(Label label)
@@ -1361,6 +1384,9 @@ sortorder: {2}
                 podcastUrl.Text = vodcast.Url;
                 podcastName.Content = vodcast.Name;
                 podcastDescription.Text = vodcast.Overview;
+
+                //enable the rename and delete buttons if a podcast is selected.
+                renamePodcast.IsEnabled = removePodcast.IsEnabled = true;
             }
         }
 
@@ -1451,6 +1477,7 @@ sortorder: {2}
 
         void HandleRequestNavigate(object sender, RoutedEventArgs e)
         {
+            Hyperlink hl = (Hyperlink)sender;
             string navigateUri = hl.NavigateUri.ToString();
             // if the URI somehow came from an untrusted source, make sure to
             // validate it before calling Process.Start(), e.g. check to see
@@ -1538,13 +1565,13 @@ sortorder: {2}
 
         private void tabControl1_SelectionChanged(object sender, SelectionChangedEventArgs e) {
             // Any SelectionChanged event from any controls contained in the TabControl will bubble up and be handled by this event.
-            // We are only interested in events related to the Tab selection changing so ignore evertthing else.
+            // We are only interested in events related to the Tab selection changing so ignore everything else.
             if (e.OriginalSource.ToString().Contains("Controls.Tab")) {
                 TabControl tabControl = (sender as TabControl);
 
                 if (tabControl.SelectedItem != null) {
                     TabItem tab = (tabControl.SelectedItem as TabItem);
-                    if (tab.Name == "folderSecurityTab") {
+                    if (tab.Name == "parentalControlTab") {
                         // Initialise the Folder list by populating the top level items based on the .vf files
                         InitFolderTree();
                     }
